@@ -1,6 +1,8 @@
 #include <deal.II/base/conditional_ostream.h>
+#include <deal.II/base/exception_macros.h>
 #include <deal.II/base/function.h>
 #include <deal.II/base/multithread_info.h>
+#include <deal.II/base/template_constraints.h>
 #include <deal.II/base/timer.h>
 #include <deal.II/base/utilities.h>
 #include <deal.II/distributed/tria.h>
@@ -12,8 +14,10 @@
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/tria.h>
 #include <deal.II/lac/affine_constraints.h>
+#include <deal.II/lac/la_parallel_block_vector.h>
 #include <deal.II/lac/la_parallel_vector.h>
 #include <deal.II/lac/vector.h>
+#include <deal.II/matrix_free/evaluation_flags.h>
 #include <deal.II/matrix_free/fe_evaluation.h>
 #include <deal.II/matrix_free/matrix_free.h>
 #include <deal.II/numerics/data_out.h>
@@ -21,311 +25,169 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
+
+/**
+ * Simple matrix-free & block vector problem.
+ *
+ * We simultaneously solve duplicates of the same problem. For simplicity, we
+ * just add one each increment (i.e., x^n = 1 + x^n-1).
+ */
+
+constexpr int dim = 2;
+constexpr int degree = 4;
+constexpr int n_refinements = 3;
+constexpr int n_steps = 10;
+constexpr int n_blocks = 21;
+using RealType = double;
 
 using namespace dealii;
 
-constexpr unsigned int dimension = 2;
-constexpr unsigned int degree = 4;
-constexpr unsigned int n_duplicates = 20;
-
-template <int dim, int degree> class SineGordonOperation {
+/**
+ * Simple operator that adds one.
+ *
+ * @note No AMR allowed so const inverted mass matrix
+ */
+class Operator {
 public:
-  SineGordonOperation(const MatrixFree<dim, double> &data_in,
-                      const double time_step);
+  using MF = MatrixFree<dim, RealType>;
+  using Vector = LinearAlgebra::distributed::BlockVector<RealType>;
+  using Vector2 = LinearAlgebra::distributed::Vector<RealType>;
 
-  void apply(LinearAlgebra::distributed::Vector<double> &dst,
-             const std::vector<LinearAlgebra::distributed::Vector<double> *>
-                 &src) const;
-
-private:
-  const MatrixFree<dim, double> &data;
-  const VectorizedArray<double> delta_t_sqr;
-  LinearAlgebra::distributed::Vector<double> inv_mass_matrix;
-
-  void local_apply(
-      const MatrixFree<dim, double> &data,
-      LinearAlgebra::distributed::Vector<double> &dst,
-      const std::vector<LinearAlgebra::distributed::Vector<double> *> &src,
-      const std::pair<unsigned int, unsigned int> &cell_range) const;
-};
-
-template <int dim, int degree>
-SineGordonOperation<dim, degree>::SineGordonOperation(
-    const MatrixFree<dim, double> &data_in, const double time_step)
-    : data(data_in), delta_t_sqr(make_vectorized_array(time_step * time_step)) {
-  data.initialize_dof_vector(inv_mass_matrix);
-
-  FEEvaluation<dim, degree> fe_eval(data);
-
-  for (unsigned int cell = 0; cell < data.n_cell_batches(); ++cell) {
-    fe_eval.reinit(cell);
-    for (const unsigned int q : fe_eval.quadrature_point_indices())
-      fe_eval.submit_value(make_vectorized_array(1.), q);
-    fe_eval.integrate(EvaluationFlags::values);
-    fe_eval.distribute_local_to_global(inv_mass_matrix);
-  }
-
-  inv_mass_matrix.compress(VectorOperation::add);
-  for (unsigned int k = 0; k < inv_mass_matrix.locally_owned_size(); ++k)
-    if (inv_mass_matrix.local_element(k) > 1e-15)
-      inv_mass_matrix.local_element(k) = 1. / inv_mass_matrix.local_element(k);
-    else
-      inv_mass_matrix.local_element(k) = 1;
-}
-
-template <int dim, int degree>
-void SineGordonOperation<dim, degree>::local_apply(
-    const MatrixFree<dim> &data,
-    LinearAlgebra::distributed::Vector<double> &dst,
-    const std::vector<LinearAlgebra::distributed::Vector<double> *> &src,
-    const std::pair<unsigned int, unsigned int> &cell_range) const {
-  AssertDimension(src.size(), 2);
-  FEEvaluation<dim, degree> current(data), old(data);
-  for (unsigned int cell = cell_range.first; cell < cell_range.second; ++cell) {
-    current.reinit(cell);
-    old.reinit(cell);
-
-    current.read_dof_values(*src[0]);
-    old.read_dof_values(*src[1]);
-
-    current.evaluate(EvaluationFlags::values | EvaluationFlags::gradients);
-    old.evaluate(EvaluationFlags::values);
-
-    for (const unsigned int q : current.quadrature_point_indices()) {
-      const VectorizedArray<double> current_value = current.get_value(q);
-      const VectorizedArray<double> old_value = old.get_value(q);
-
-      current.submit_value(2. * current_value - old_value -
-                               delta_t_sqr * std::sin(current_value),
-                           q);
-      current.submit_gradient(-delta_t_sqr * current.get_gradient(q), q);
+  Operator(const MF &data) : _data(data) {
+    _data.initialize_dof_vector(invm);
+    // TODO: Double check that this is what we do in PRISMS-PF
+    FEEvaluation<dim, degree> fe_eval(_data);
+    for (unsigned int cell = 0; cell < _data.n_cell_batches(); ++cell) {
+      fe_eval.reinit(cell);
+      for (const unsigned int q : fe_eval.quadrature_point_indices())
+        fe_eval.submit_value(make_vectorized_array(1.0), q);
+      fe_eval.integrate(EvaluationFlags::values);
+      fe_eval.distribute_local_to_global(invm);
     }
 
-    current.integrate(EvaluationFlags::values | EvaluationFlags::gradients);
-    current.distribute_local_to_global(dst);
-  }
-}
+    invm.compress(VectorOperation::add);
+    for (unsigned int k = 0; k < invm.locally_owned_size(); ++k)
+      invm.local_element(k) =
+          invm.local_element(k) >
+                  10.0 * std::numeric_limits<RealType>::epsilon()
+              ? 1.0 / invm.local_element(k)
+              : 1.0;
+  };
 
-template <int dim, int degree>
-void SineGordonOperation<dim, degree>::apply(
-    LinearAlgebra::distributed::Vector<double> &dst,
-    const std::vector<LinearAlgebra::distributed::Vector<double> *> &src)
-    const {
-  data.cell_loop(&SineGordonOperation<dim, degree>::local_apply, this, dst, src,
-                 true);
-  dst.scale(inv_mass_matrix);
-}
+  void apply(Vector &dst, const Vector &src) const {
+    _data.cell_loop(&Operator::local_apply, this, dst, src, true);
+    for (unsigned int i = 0; i < dst.n_blocks(); ++i) {
+      dst.block(i).scale(invm);
+    }
+  };
 
-template <int dim> class InitialCondition : public Function<dim> {
-public:
-  InitialCondition(const unsigned int n_components = 1, const double time = 0.)
-      : Function<dim>(n_components, time) {}
-  virtual double value(const Point<dim> &p,
-                       const unsigned int /*component*/) const override {
-    double t = this->get_time();
+private:
+  const MF &_data;
+  Vector2 invm;
 
-    const double m = 0.5;
-    const double c1 = 0.;
-    const double c2 = 0.;
-    const double factor =
-        (m / std::sqrt(1. - m * m) * std::sin(std::sqrt(1. - m * m) * t + c2));
-    double result = 1.;
-    for (unsigned int d = 0; d < dim; ++d)
-      result *= -4. * std::atan(factor / std::cosh(m * p[d] + c1));
-    return result;
-  }
+  void
+  local_apply(const MF &data, Vector &dst, const Vector &src,
+              const std::pair<unsigned int, unsigned int> &cell_range) const {
+    AssertDimension(src.n_blocks(), dst.n_blocks());
+    FEEvaluation<dim, degree> fe_eval(_data);
+    for (unsigned int cell = cell_range.first; cell < cell_range.second;
+         ++cell) {
+      fe_eval.reinit(cell);
+      fe_eval.gather_evaluate(src, EvaluationFlags::values);
+      for (const unsigned int q : fe_eval.quadrature_point_indices()) {
+        fe_eval.submit_value(fe_eval.get_value(q) + 1.0, q);
+      }
+      fe_eval.integrate_scatter(EvaluationFlags::values, dst);
+    }
+  };
 };
 
-template <int dim> class SineGordonProblem {
+class Problem {
 public:
-  SineGordonProblem();
+  using MF = MatrixFree<dim, RealType>;
+  using Vector = LinearAlgebra::distributed::BlockVector<RealType>;
+  using Vector2 = LinearAlgebra::distributed::Vector<RealType>;
+
+  Problem();
   void run();
 
 private:
   ConditionalOStream pcout;
 
   void make_grid_and_dofs();
-  void output_results(const unsigned int timestep_number);
+  void output_results(const unsigned int increment);
 
-#ifdef DEAL_II_WITH_P4EST
   parallel::distributed::Triangulation<dim> triangulation;
-#else
-  Triangulation<dim> triangulation;
-#endif
   const FE_Q<dim> fe;
   DoFHandler<dim> dof_handler;
-
   const MappingQ1<dim> mapping;
 
-  AffineConstraints<double> constraints;
-  IndexSet locally_relevant_dofs;
+  AffineConstraints<RealType> constraints;
 
-  MatrixFree<dim, double> matrix_free_data;
+  MF data;
 
-  LinearAlgebra::distributed::Vector<double> solution, old_solution,
-      old_old_solution;
-
-  const unsigned int n_global_refinements;
-  double time, time_step;
-  const double final_time;
-  const double cfl_number;
-  const unsigned int output_timestep_skip;
+  Vector solution, old_solution;
 };
 
-template <int dim>
-SineGordonProblem<dim>::SineGordonProblem()
+Problem::Problem()
     : pcout(std::cout, Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
 #ifdef DEAL_II_WITH_P4EST
       ,
       triangulation(MPI_COMM_WORLD)
 #endif
       ,
-      fe(QGaussLobatto<1>(degree + 1)), dof_handler(triangulation),
-      n_global_refinements(10 - 2 * dim), time(-10), time_step(10.),
-      final_time(10.), cfl_number(.1 / degree), output_timestep_skip(200) {
+      fe(QGaussLobatto<1>(degree + 1)), dof_handler(triangulation) {
 }
 
-template <int dim> void SineGordonProblem<dim>::make_grid_and_dofs() {
-  GridGenerator::hyper_cube(triangulation, -15, 15);
-  triangulation.refine_global(n_global_refinements);
-  {
-    for (const auto &cell : triangulation.active_cell_iterators())
-      if (cell->is_locally_owned())
-        if (cell->center().norm() < 11)
-          cell->set_refine_flag();
-    triangulation.execute_coarsening_and_refinement();
-
-    for (const auto &cell : triangulation.active_cell_iterators())
-      if (cell->is_locally_owned())
-        if (cell->center().norm() < 6)
-          cell->set_refine_flag();
-    triangulation.execute_coarsening_and_refinement();
-  }
-
-  pcout << "   Number of global active cells: "
-        << triangulation.n_global_active_cells() << std::endl;
-
+void Problem::make_grid_and_dofs() {
+  GridGenerator::hyper_cube(triangulation);
+  triangulation.refine_global(n_refinements);
   dof_handler.distribute_dofs(fe);
 
-  pcout << "   Number of degrees of freedom: " << dof_handler.n_dofs()
-        << std::endl;
-
-  locally_relevant_dofs = DoFTools::extract_locally_relevant_dofs(dof_handler);
+  IndexSet locally_relevant_dofs =
+      DoFTools::extract_locally_relevant_dofs(dof_handler);
   constraints.clear();
   constraints.reinit(dof_handler.locally_owned_dofs(), locally_relevant_dofs);
   DoFTools::make_hanging_node_constraints(dof_handler, constraints);
   constraints.close();
 
-  typename MatrixFree<dim>::AdditionalData additional_data;
+  typename MF::AdditionalData additional_data;
   additional_data.tasks_parallel_scheme =
-      MatrixFree<dim>::AdditionalData::TasksParallelScheme::partition_partition;
+      MF::AdditionalData::TasksParallelScheme::partition_partition;
 
-  matrix_free_data.reinit(mapping, dof_handler, constraints,
-                          QGaussLobatto<1>(degree + 1), additional_data);
+  data.reinit(mapping, dof_handler, constraints, QGaussLobatto<1>(degree + 1),
+              additional_data);
 
-  matrix_free_data.initialize_dof_vector(solution);
+  solution.reinit(n_blocks, dof_handler.n_dofs());
   old_solution.reinit(solution);
-  old_old_solution.reinit(solution);
 }
 
-template <int dim>
-void SineGordonProblem<dim>::output_results(
-    const unsigned int timestep_number) {
+void Problem::output_results(const unsigned int increment) {
   constraints.distribute(solution);
-
-  Vector<float> norm_per_cell(triangulation.n_active_cells());
   solution.update_ghost_values();
-  VectorTools::integrate_difference(
-      mapping, dof_handler, solution, Functions::ZeroFunction<dim>(),
-      norm_per_cell, QGauss<dim>(degree + 1), VectorTools::L2_norm);
-  const double solution_norm = VectorTools::compute_global_error(
-      triangulation, norm_per_cell, VectorTools::L2_norm);
-
-  pcout << "   Time:" << std::setw(8) << std::setprecision(3) << time
-        << ", solution norm: " << std::setprecision(5) << std::setw(7)
-        << solution_norm << std::endl;
 
   DataOut<dim> data_out;
-
   data_out.attach_dof_handler(dof_handler);
   data_out.add_data_vector(solution, "solution");
   data_out.build_patches(mapping);
 
-  data_out.write_vtu_with_pvtu_record("./", "solution", timestep_number,
+  data_out.write_vtu_with_pvtu_record("./", "solution", increment,
                                       MPI_COMM_WORLD, 3);
-
   solution.zero_out_ghost_values();
 }
 
-template <int dim> void SineGordonProblem<dim>::run() {
-  {
-    pcout << "Number of MPI ranks:            "
-          << Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD) << std::endl;
-    pcout << "Number of threads on each rank: " << MultithreadInfo::n_threads()
-          << std::endl;
-    const unsigned int n_vect_doubles = VectorizedArray<double>::size();
-    const unsigned int n_vect_bits = 8 * sizeof(double) * n_vect_doubles;
-    pcout << "Vectorization over " << n_vect_doubles
-          << " doubles = " << n_vect_bits << " bits ("
-          << Utilities::System::get_current_vectorization_level() << ')'
-          << std::endl
-          << std::endl;
-  }
+void Problem::run() {
   make_grid_and_dofs();
-
-  const double local_min_cell_diameter =
-      triangulation.last()->diameter() / std::sqrt(dim);
-  const double global_min_cell_diameter =
-      -Utilities::MPI::max(-local_min_cell_diameter, MPI_COMM_WORLD);
-  time_step = cfl_number * global_min_cell_diameter;
-  time_step = (final_time - time) / (int((final_time - time) / time_step));
-  pcout << "   Time step size: " << time_step
-        << ", finest cell: " << global_min_cell_diameter << std::endl
-        << std::endl;
-
-  VectorTools::interpolate(mapping, dof_handler, InitialCondition<dim>(1, time),
-                           solution);
-  VectorTools::interpolate(mapping, dof_handler,
-                           InitialCondition<dim>(1, time - time_step),
-                           old_solution);
   output_results(0);
-
-  std::vector<LinearAlgebra::distributed::Vector<double> *> previous_solutions(
-      {&old_solution, &old_old_solution});
-
-  SineGordonOperation<dim, degree> sine_gordon_op(matrix_free_data, time_step);
-
-  unsigned int timestep_number = 1;
-
-  Timer timer;
-  double wtime = 0;
-  double output_time = 0;
-  for (time += time_step; time <= final_time;
-       time += time_step, ++timestep_number) {
-    timer.restart();
-    old_old_solution.swap(old_solution);
+  Operator op(data);
+  for (unsigned int step = 1; step < n_steps; ++step) {
+    pcout << "Value " << solution.l1_norm() / dof_handler.n_dofs() << std::endl;
+    op.apply(solution, old_solution);
     old_solution.swap(solution);
-    sine_gordon_op.apply(solution, previous_solutions);
-    wtime += timer.wall_time();
 
-    timer.restart();
-    if (timestep_number % output_timestep_skip == 0)
-      output_results(timestep_number / output_timestep_skip);
-
-    output_time += timer.wall_time();
+    output_results(step);
   }
-  timer.restart();
-  output_results(timestep_number / output_timestep_skip + 1);
-  output_time += timer.wall_time();
-
-  pcout << std::endl
-        << "   Performed " << timestep_number << " time steps." << std::endl;
-
-  pcout << "   Average wallclock time per time step: "
-        << wtime / timestep_number << 's' << std::endl;
-
-  pcout << "   Spent " << output_time << "s on output and " << wtime
-        << "s on computations." << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -335,8 +197,8 @@ int main(int argc, char **argv) {
       argc, argv, numbers::invalid_unsigned_int);
 
   try {
-    SineGordonProblem<dimension> sg_problem;
-    sg_problem.run();
+    Problem problem;
+    problem.run();
   } catch (std::exception &exc) {
     std::cerr << std::endl
               << std::endl

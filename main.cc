@@ -159,17 +159,27 @@ void Problem::make_grid_and_dofs() {
   data.reinit(mapping, dof_handler, constraints, QGaussLobatto<1>(degree + 1),
               additional_data);
 
-  solution.reinit(n_blocks, dof_handler.n_dofs());
-  old_solution.reinit(solution);
+  std::vector<std::shared_ptr<const Utilities::MPI::Partitioner>> partitioners(
+      n_blocks);
+  for (unsigned int i = 0; i < n_blocks; ++i) {
+    partitioners[i] = data.get_vector_partitioner();
+  }
+
+  solution.reinit(partitioners);
+  old_solution.reinit(partitioners);
 }
 
 void Problem::output_results(const unsigned int increment) {
-  constraints.distribute(solution);
+  for (unsigned int i = 0; i < n_blocks; ++i) {
+    constraints.distribute(solution.block(i));
+  }
   solution.update_ghost_values();
 
   DataOut<dim> data_out;
   data_out.attach_dof_handler(dof_handler);
-  data_out.add_data_vector(solution, "solution");
+  for (unsigned int i = 0; i < n_blocks; ++i) {
+    data_out.add_data_vector(solution.block(i), "n" + std::to_string(i));
+  }
   data_out.build_patches(mapping);
 
   data_out.write_vtu_with_pvtu_record("./", "solution", increment,

@@ -39,7 +39,7 @@ constexpr int degree = 4;
 constexpr int n_refinements = 3;
 constexpr int n_steps = 10;
 constexpr int n_blocks = 21;
-using RealType = double;
+using RealType = float;
 
 using namespace dealii;
 
@@ -56,11 +56,11 @@ public:
 
   Operator(const MF &data) : _data(data) {
     _data.initialize_dof_vector(invm);
-    FEEvaluation<dim, degree> fe_eval(_data);
+    FEEvaluation<dim, degree, degree + 1, 1, RealType> fe_eval(_data);
     for (unsigned int cell = 0; cell < _data.n_cell_batches(); ++cell) {
       fe_eval.reinit(cell);
       for (const unsigned int q : fe_eval.quadrature_point_indices())
-        fe_eval.submit_value(make_vectorized_array(1.0), q);
+        fe_eval.submit_value(make_vectorized_array(RealType(1.0)), q);
       fe_eval.integrate(EvaluationFlags::values);
       fe_eval.distribute_local_to_global(invm);
     }
@@ -89,7 +89,7 @@ private:
   local_apply(const MF &data, Vector &dst, const Vector &src,
               const std::pair<unsigned int, unsigned int> &cell_range) const {
     AssertDimension(src.n_blocks(), dst.n_blocks());
-    FEEvaluation<dim, degree> fe_eval(_data);
+    FEEvaluation<dim, degree, degree + 1, 1, RealType> fe_eval(_data);
     for (unsigned int cell = cell_range.first; cell < cell_range.second;
          ++cell) {
       fe_eval.reinit(cell);

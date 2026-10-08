@@ -1,0 +1,151 @@
+###
+#
+#  deal.II configuration:
+#        CMAKE_BUILD_TYPE:       Debug
+#        BUILD_SHARED_LIBS:      ON
+#        CMAKE_INSTALL_PREFIX:   /nix/store/kwldg0mcbhirdrqqwqigfn01wcr5l61g-dealii-v9.8.0
+#        CMAKE_SOURCE_DIR:       /build/source
+#                                (version 9.8.0)
+#        CMAKE_BINARY_DIR:       /build/source/build
+#        CMAKE_CXX_COMPILER:     GNU 15.3.0 on platform Linux x86_64
+#                                /nix/store/dy6j7267wrgjlr2z748sbx83zj16vs3c-gcc-wrapper-15.3.0/bin/g++
+#        CMAKE_C_COMPILER:       /nix/store/dy6j7267wrgjlr2z748sbx83zj16vs3c-gcc-wrapper-15.3.0/bin/gcc
+#        CMAKE_GENERATOR:        Ninja
+#        C++ language standard:  C++17
+#        Building C++20 module:  OFF
+#        Vectorization level:    128 bit (sse2)
+#
+#  Exported compiler and linker flags:
+#        DEAL_II_CXX_FLAGS:            -fopenmp-simd
+#        DEAL_II_CXX_FLAGS_DEBUG:      -O0 -ggdb -Wa,--compress-debug-sections
+#        DEAL_II_WARNING_FLAGS:        -pedantic -Wall -Wextra -Wmissing-braces -Woverloaded-virtual -Wpointer-arith -Wsign-compare -Wsuggest-override -Wswitch -Wsynth -Wwrite-strings -Wno-placement-new -Wno-deprecated-declarations -Wno-literal-suffix -Wno-psabi -Wno-misleading-indentation -Wno-unused-local-typedefs
+#        DEAL_II_LINKER_FLAGS:         -rdynamic
+#        DEAL_II_LINKER_FLAGS_DEBUG:   -ggdb -Wl,--compress-debug-sections=zlib
+#  Library targets:
+#
+#    Target: dealii
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: $<$<CONFIG:Debug>:dealii::dealii_debug>
+#        INTERFACE_COMPILE_OPTIONS: $<$<COMPILE_LANGUAGE:CXX>:-fopenmp-simd>,$<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-O0,-ggdb,-Wa,--compress-debug-sections>
+#        INTERFACE_LINK_OPTIONS: -rdynamic,$<$<CONFIG:Debug>:-ggdb,-Wl,--compress-debug-sections=zlib>
+#
+#    Target: dealii_debug
+#        TYPE: SHARED_LIBRARY
+#        VERSION: 9.8.0
+#        SOVERSION: 9.8.0
+#        LINK_LIBRARIES: interface_lapack,interface_mpi,interface_taskflow,interface_zlib,interface_boost,interface_kokkos,interface_adolc,interface_p4est,object_numerics_debug,object_fe_debug,object_matrix_free_debug,object_dofs_debug,object_lac_debug,object_base_debug,object_cgal_debug,object_gmsh_debug,object_grid_debug,object_hp_debug,object_multigrid_debug,object_distributed_debug,object_algorithms_debug,object_integrators_debug,object_meshworker_debug,object_opencascade_debug,object_particles_debug,object_differentiation_ad_debug,object_differentiation_sd_debug,object_differentiation_debug,object_physics_elasticity_debug,object_physics_debug,object_rol_debug,object_non_matching_debug,object_sundials_debug,object_trilinos_debug,object_arborx_debug,object_vtk_debug
+#        INCLUDE_DIRECTORIES: /build/source/build/include,/build/source/build/source,/build/source/include,$<BUILD_INTERFACE:/build/source/include/>,$<BUILD_INTERFACE:/build/source/build/include/>
+#        COMPILE_DEFINITIONS: DEBUG,_GLIBCXX_ASSERTIONS
+#        COMPILE_OPTIONS: -pedantic,-Wall,-Wextra,-Wmissing-braces,-Woverloaded-virtual,-Wpointer-arith,-Wsign-compare,-Wsuggest-override,-Wswitch,-Wsynth,-Wwrite-strings,-Wno-placement-new,-Wno-deprecated-declarations,-Wno-literal-suffix,-Wno-psabi,-Wno-misleading-indentation,-Wno-unused-local-typedefs,-fopenmp-simd,-O0,-ggdb,-Wa,--compress-debug-sections
+#        LINK_OPTIONS: -rdynamic,-ggdb,-Wl,--compress-debug-sections=zlib
+#        INTERFACE_LINK_LIBRARIES: interface_lapack,interface_mpi,interface_taskflow,interface_zlib,interface_boost,interface_kokkos,interface_adolc,interface_p4est
+#        INTERFACE_INCLUDE_DIRECTORIES: $<BUILD_INTERFACE:/build/source/build/include>,$<BUILD_INTERFACE:/build/source/include>,$<INSTALL_INTERFACE:include>,$<BUILD_INTERFACE:/build/source/include/>,$<BUILD_INTERFACE:/build/source/build/include/>
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: $<BUILD_INTERFACE:/build/source/build/include>,$<BUILD_INTERFACE:/build/source/include>,$<INSTALL_INTERFACE:include>
+#        INTERFACE_COMPILE_DEFINITIONS: DEBUG,_GLIBCXX_ASSERTIONS
+#
+#  Configured Features (DEAL_II_ALLOW_BUNDLED = FALSE, DEAL_II_ALLOW_AUTODETECTION = FALSE):
+#      ( DEAL_II_WITH_64BIT_INDICES = OFF )
+#        DEAL_II_WITH_ADOLC set up with external dependencies
+#      ( DEAL_II_WITH_ARBORX = OFF )
+#      ( DEAL_II_WITH_ARPACK = OFF )
+#      ( DEAL_II_WITH_ASSIMP = OFF )
+#        DEAL_II_WITH_BOOST set up with external dependencies
+#            BOOST_VERSION = 1.89.0
+#      ( DEAL_II_WITH_CGAL = OFF )
+#      ( DEAL_II_WITH_COMPLEX_VALUES = OFF )
+#      ( DEAL_II_WITH_GINKGO = OFF )
+#      ( DEAL_II_WITH_GMSH = OFF )
+#      ( DEAL_II_WITH_GSL = OFF )
+#      ( DEAL_II_WITH_HDF5 = OFF )
+#        DEAL_II_WITH_KOKKOS set up with external dependencies
+#            KOKKOS_VERSION = 5.2.2
+#            KOKKOS_BACKENDS = SERIAL
+#            KOKKOS_ARCHITECTURES = 
+#        DEAL_II_WITH_LAPACK set up with external dependencies
+#            LAPACK_WITH_64BIT_BLAS_INDICES = OFF
+#      ( DEAL_II_WITH_MAGIC_ENUM = OFF )
+#      ( DEAL_II_WITH_METIS = OFF )
+#        DEAL_II_WITH_MPI set up with external dependencies
+#            MPI_VERSION = 3.1
+#            MPI_C_COMPILER = /nix/store/v2l3jzibz5bx55hkkfaidzjl7g32x4wf-openmpi-5.0.10-dev/bin/mpicc
+#            MPI_CXX_COMPILER = /nix/store/v2l3jzibz5bx55hkkfaidzjl7g32x4wf-openmpi-5.0.10-dev/bin/mpicxx
+#            MPI_CXX_VERSION = 3.1
+#      ( DEAL_II_WITH_MUMPS = OFF )
+#      ( DEAL_II_WITH_MUPARSER = OFF )
+#      ( DEAL_II_WITH_NETCDF = OFF )
+#      ( DEAL_II_WITH_OPENCASCADE = OFF )
+#        DEAL_II_WITH_P4EST set up with external dependencies
+#            P4EST_VERSION = 2.8.7
+#      ( DEAL_II_WITH_PETSC = OFF )
+#      ( DEAL_II_WITH_PSBLAS = OFF )
+#      ( DEAL_II_WITH_SCALAPACK = OFF )
+#      ( DEAL_II_WITH_SLEPC = OFF )
+#      ( DEAL_II_WITH_SUNDIALS = OFF )
+#      ( DEAL_II_WITH_SYMENGINE = OFF )
+#        DEAL_II_WITH_TASKFLOW set up with external dependencies
+#            TASKFLOW_VERSION = 4.0.0
+#      ( DEAL_II_WITH_TBB = OFF )
+#      ( DEAL_II_WITH_TRILINOS = OFF )
+#      ( DEAL_II_WITH_UMFPACK = OFF )
+#      ( DEAL_II_WITH_VTK = OFF )
+#        DEAL_II_WITH_ZLIB set up with external dependencies
+#            ZLIB_VERSION = 1.3.2
+#
+#  Interface targets:
+#
+#    Target: interface_adolc
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: /nix/store/6nsgjymvb04lvy5x953qmlyr6f429k9p-adolc-2.7.2/lib/libadolc.so
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/6nsgjymvb04lvy5x953qmlyr6f429k9p-adolc-2.7.2/include
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/6nsgjymvb04lvy5x953qmlyr6f429k9p-adolc-2.7.2/include
+#
+#    Target: interface_boost
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: /nix/store/anc26dy8hjdrzdix8xyd8fhzlhmlxqzk-boost-1.89.0/lib/libboost_iostreams.so.1.89.0,/nix/store/anc26dy8hjdrzdix8xyd8fhzlhmlxqzk-boost-1.89.0/lib/libboost_serialization.so.1.89.0,/nix/store/anc26dy8hjdrzdix8xyd8fhzlhmlxqzk-boost-1.89.0/lib/libboost_random.so.1.89.0,/nix/store/anc26dy8hjdrzdix8xyd8fhzlhmlxqzk-boost-1.89.0/lib/libboost_regex.so.1.89.0
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/dkwr0d9sx2b1hf2gp6vggqamzwkz35rf-boost-1.89.0-dev/include
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/dkwr0d9sx2b1hf2gp6vggqamzwkz35rf-boost-1.89.0-dev/include
+#        INTERFACE_COMPILE_DEFINITIONS: BOOST_IOSTREAMS_NO_LIB,BOOST_IOSTREAMS_DYN_LINK,BOOST_SERIALIZATION_NO_LIB,BOOST_SERIALIZATION_DYN_LINK,BOOST_RANDOM_NO_LIB,BOOST_RANDOM_DYN_LINK,BOOST_REGEX_NO_LIB,BOOST_REGEX_DYN_LINK
+#
+#    Target: interface_kokkos
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: /nix/store/rp54xkx2bq6kl3ddcm4x846cplqk8hlr-kokkos-5.2.2/lib/libkokkoscore.a,dl,/nix/store/rp54xkx2bq6kl3ddcm4x846cplqk8hlr-kokkos-5.2.2/lib/libkokkoscontainers.a,/nix/store/rp54xkx2bq6kl3ddcm4x846cplqk8hlr-kokkos-5.2.2/lib/libkokkosalgorithms.a,/nix/store/rp54xkx2bq6kl3ddcm4x846cplqk8hlr-kokkos-5.2.2/lib/libkokkossimd.a
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/rp54xkx2bq6kl3ddcm4x846cplqk8hlr-kokkos-5.2.2/include
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/rp54xkx2bq6kl3ddcm4x846cplqk8hlr-kokkos-5.2.2/include
+#        INTERFACE_COMPILE_DEFINITIONS: KOKKOS_DEPENDENCE
+#        INTERFACE_LINK_OPTIONS: -DKOKKOS_DEPENDENCE
+#
+#    Target: interface_lapack
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: -lm,-ldl,/nix/store/nlg0vijaii4b4h8y5z407fsadf8z36ds-openblas-0.3.33/lib/libopenblas.so
+#
+#    Target: interface_mpi
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: /nix/store/9ff05rpwy2agw5ghxjyja0fdryg8zhrv-openmpi-5.0.10/lib/libmpi.so
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/v2l3jzibz5bx55hkkfaidzjl7g32x4wf-openmpi-5.0.10-dev/include
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/v2l3jzibz5bx55hkkfaidzjl7g32x4wf-openmpi-5.0.10-dev/include
+#        INTERFACE_LINK_OPTIONS: SHELL:-Wl,-rpath -Wl,/nix/store/9ff05rpwy2agw5ghxjyja0fdryg8zhrv-openmpi-5.0.10/lib,-Wl,--enable-new-dtags
+#
+#    Target: interface_p4est
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: /nix/store/vzrz6mss19b5dvmdvdhx0z17p0n9gnzi-p4est-2.8.7/lib/libp4est.so,/nix/store/4f9yz7jkbbcai3qrwrdlg4zcyrpzxcvc-p4est-sc-2.8.7/lib/libsc.so,-lm,-ldl,/nix/store/nlg0vijaii4b4h8y5z407fsadf8z36ds-openblas-0.3.33/lib/libopenblas.so,/nix/store/9ff05rpwy2agw5ghxjyja0fdryg8zhrv-openmpi-5.0.10/lib/libmpi.so
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/vzrz6mss19b5dvmdvdhx0z17p0n9gnzi-p4est-2.8.7/include,/nix/store/4f9yz7jkbbcai3qrwrdlg4zcyrpzxcvc-p4est-sc-2.8.7/include
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/vzrz6mss19b5dvmdvdhx0z17p0n9gnzi-p4est-2.8.7/include,/nix/store/4f9yz7jkbbcai3qrwrdlg4zcyrpzxcvc-p4est-sc-2.8.7/include
+#
+#    Target: interface_taskflow
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/4g9yvxf0vzc8mkbwb02n5hqwjimbbqw2-taskflow-4.0.0/include/
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/4g9yvxf0vzc8mkbwb02n5hqwjimbbqw2-taskflow-4.0.0/include/
+#
+#    Target: interface_zlib
+#        TYPE: INTERFACE_LIBRARY
+#        INTERFACE_LINK_LIBRARIES: /nix/store/6s4wm3zl2y0v5g998n2g88k1zh3vf2pr-zlib-1.3.2/lib/libz.so
+#        INTERFACE_INCLUDE_DIRECTORIES: /nix/store/2k9dj65vyanlvq863ks3ii7cjx82kfng-zlib-1.3.2-dev/include
+#        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES: /nix/store/2k9dj65vyanlvq863ks3ii7cjx82kfng-zlib-1.3.2-dev/include
+#
+#  Component configuration:
+#      ( DEAL_II_COMPONENT_DOCUMENTATION = OFF )
+#      ( DEAL_II_COMPONENT_EXAMPLES = FALSE )
+#      ( DEAL_II_COMPONENT_PACKAGE = OFF )
+#      ( DEAL_II_COMPONENT_PYTHON_BINDINGS = OFF )
+#
+###

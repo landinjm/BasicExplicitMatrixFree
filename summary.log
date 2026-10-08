@@ -1,0 +1,62 @@
+###
+#
+#  deal.II configuration:
+#        CMAKE_BUILD_TYPE:       Debug
+#        BUILD_SHARED_LIBS:      ON
+#        CMAKE_INSTALL_PREFIX:   /nix/store/kwldg0mcbhirdrqqwqigfn01wcr5l61g-dealii-v9.8.0
+#        CMAKE_SOURCE_DIR:       /build/source
+#                                (version 9.8.0)
+#        CMAKE_BINARY_DIR:       /build/source/build
+#        CMAKE_CXX_COMPILER:     GNU 15.3.0 on platform Linux x86_64
+#                                /nix/store/dy6j7267wrgjlr2z748sbx83zj16vs3c-gcc-wrapper-15.3.0/bin/g++
+#        C++ language standard:  C++17
+#        Building C++20 module:  OFF
+#        Vectorization level:    128 bit (sse2)
+#
+#  Configured Features (DEAL_II_ALLOW_BUNDLED = FALSE, DEAL_II_ALLOW_AUTODETECTION = FALSE):
+#      ( DEAL_II_WITH_64BIT_INDICES = OFF )
+#        DEAL_II_WITH_ADOLC set up with external dependencies
+#      ( DEAL_II_WITH_ARBORX = OFF )
+#      ( DEAL_II_WITH_ARPACK = OFF )
+#      ( DEAL_II_WITH_ASSIMP = OFF )
+#        DEAL_II_WITH_BOOST set up with external dependencies
+#      ( DEAL_II_WITH_CGAL = OFF )
+#      ( DEAL_II_WITH_COMPLEX_VALUES = OFF )
+#      ( DEAL_II_WITH_GINKGO = OFF )
+#      ( DEAL_II_WITH_GMSH = OFF )
+#      ( DEAL_II_WITH_GSL = OFF )
+#      ( DEAL_II_WITH_HDF5 = OFF )
+#        DEAL_II_WITH_KOKKOS set up with external dependencies
+#        DEAL_II_WITH_LAPACK set up with external dependencies
+#      ( DEAL_II_WITH_MAGIC_ENUM = OFF )
+#      ( DEAL_II_WITH_METIS = OFF )
+#        DEAL_II_WITH_MPI set up with external dependencies
+#      ( DEAL_II_WITH_MUMPS = OFF )
+#      ( DEAL_II_WITH_MUPARSER = OFF )
+#      ( DEAL_II_WITH_NETCDF = OFF )
+#      ( DEAL_II_WITH_OPENCASCADE = OFF )
+#        DEAL_II_WITH_P4EST set up with external dependencies
+#      ( DEAL_II_WITH_PETSC = OFF )
+#      ( DEAL_II_WITH_PSBLAS = OFF )
+#      ( DEAL_II_WITH_SCALAPACK = OFF )
+#      ( DEAL_II_WITH_SLEPC = OFF )
+#      ( DEAL_II_WITH_SUNDIALS = OFF )
+#      ( DEAL_II_WITH_SYMENGINE = OFF )
+#        DEAL_II_WITH_TASKFLOW set up with external dependencies
+#      ( DEAL_II_WITH_TBB = OFF )
+#      ( DEAL_II_WITH_TRILINOS = OFF )
+#      ( DEAL_II_WITH_UMFPACK = OFF )
+#      ( DEAL_II_WITH_VTK = OFF )
+#        DEAL_II_WITH_ZLIB set up with external dependencies
+#
+#  Component configuration:
+#      ( DEAL_II_COMPONENT_DOCUMENTATION = OFF )
+#      ( DEAL_II_COMPONENT_EXAMPLES = FALSE )
+#      ( DEAL_II_COMPONENT_PACKAGE = OFF )
+#      ( DEAL_II_COMPONENT_PYTHON_BINDINGS = OFF )
+#
+#  Detailed information (compiler flags, feature configuration) can be found in detailed.log
+#
+#  Run  $ ninja info  to print a help message with a list of top level targets
+#
+###

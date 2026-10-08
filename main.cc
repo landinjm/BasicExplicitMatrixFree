@@ -56,7 +56,6 @@ public:
 
   Operator(const MF &data) : _data(data) {
     _data.initialize_dof_vector(invm);
-    // TODO: Double check that this is what we do in PRISMS-PF
     FEEvaluation<dim, degree> fe_eval(_data);
     for (unsigned int cell = 0; cell < _data.n_cell_batches(); ++cell) {
       fe_eval.reinit(cell);

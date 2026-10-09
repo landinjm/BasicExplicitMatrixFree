@@ -45,8 +45,6 @@ using namespace dealii;
 
 /**
  * Simple operator that adds one.
- *
- * @note No AMR allowed so const inverted mass matrix
  */
 class Operator {
 public:
@@ -75,6 +73,7 @@ public:
   };
 
   void apply(Vector &dst, const Vector &src) const {
+    AssertDimension(src.n_blocks(), dst.n_blocks());
     _data.cell_loop(&Operator::local_apply, this, dst, src, true);
     for (unsigned int i = 0; i < dst.n_blocks(); ++i) {
       dst.block(i).scale(invm);
@@ -88,8 +87,7 @@ private:
   void
   local_apply(const MF &data, Vector &dst, const Vector &src,
               const std::pair<unsigned int, unsigned int> &cell_range) const {
-    AssertDimension(src.n_blocks(), dst.n_blocks());
-    FEEvaluation<dim, degree, degree + 1, 1, RealType> fe_eval(_data);
+    FEEvaluation<dim, degree, degree + 1, 1, RealType> fe_eval(data);
     for (unsigned int cell = cell_range.first; cell < cell_range.second;
          ++cell) {
       fe_eval.reinit(cell);
@@ -130,14 +128,9 @@ private:
 };
 
 Problem::Problem()
-    : pcout(std::cout, Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
-#ifdef DEAL_II_WITH_P4EST
-      ,
-      triangulation(MPI_COMM_WORLD)
-#endif
-      ,
-      fe(QGaussLobatto<1>(degree + 1)), dof_handler(triangulation) {
-}
+    : pcout(std::cout, Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0),
+      triangulation(MPI_COMM_WORLD), fe(QGaussLobatto<1>(degree + 1)),
+      dof_handler(triangulation) {}
 
 void Problem::make_grid_and_dofs() {
   GridGenerator::hyper_cube(triangulation);
@@ -191,7 +184,8 @@ void Problem::run() {
   output_results(0);
   Operator op(data);
   for (unsigned int step = 1; step < n_steps; ++step) {
-    pcout << "Value " << solution.l1_norm() / dof_handler.n_dofs() << std::endl;
+    pcout << "Value " << solution.l1_norm() / (n_blocks * dof_handler.n_dofs())
+          << std::endl;
     op.apply(solution, old_solution);
     old_solution.swap(solution);
 

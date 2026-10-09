@@ -91,11 +91,13 @@ private:
     for (unsigned int cell = cell_range.first; cell < cell_range.second;
          ++cell) {
       fe_eval.reinit(cell);
-      fe_eval.gather_evaluate(src, EvaluationFlags::values);
-      for (const unsigned int q : fe_eval.quadrature_point_indices()) {
-        fe_eval.submit_value(fe_eval.get_value(q) + 1.0, q);
+      for (unsigned int i = 0; i < dst.n_blocks(); ++i) {
+        fe_eval.gather_evaluate(src.block(i), EvaluationFlags::values);
+        for (const unsigned int q : fe_eval.quadrature_point_indices()) {
+          fe_eval.submit_value(fe_eval.get_value(q) + 1.0, q);
+        }
+        fe_eval.integrate_scatter(EvaluationFlags::values, dst.block(i));
       }
-      fe_eval.integrate_scatter(EvaluationFlags::values, dst);
     }
   };
 };
@@ -152,10 +154,7 @@ void Problem::make_grid_and_dofs() {
               additional_data);
 
   std::vector<std::shared_ptr<const Utilities::MPI::Partitioner>> partitioners(
-      n_blocks);
-  for (unsigned int i = 0; i < n_blocks; ++i) {
-    partitioners[i] = data.get_vector_partitioner();
-  }
+      n_blocks, data.get_vector_partitioner());
 
   solution.reinit(partitioners);
   old_solution.reinit(partitioners);
